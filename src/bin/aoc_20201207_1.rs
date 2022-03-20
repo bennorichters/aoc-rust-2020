@@ -1,9 +1,5 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 use std::{
-    collections::HashMap,
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs::File,
     io::{prelude::*, BufReader},
     path::Path,
