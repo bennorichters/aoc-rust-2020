@@ -61,10 +61,10 @@ fn find_sum_sequence(nrs: &Vec<u64>, index: usize) -> (usize, usize) {
             }
 
             j += 1;
-            total += &nrs[j];
+            total += nrs[j];
         }
 
-        total -= &nrs[i];
+        total -= nrs[i];
     }
 
     panic!("no sequence found for sum");
