@@ -50,13 +50,13 @@ fn add_lowest_highest(nrs: &Vec<u64>, index_low: usize, index_high: usize) -> u6
 }
 
 fn find_sum_sequence(nrs: &Vec<u64>, index: usize) -> (usize, usize) {
-    let sum = &nrs[index];
+    let sum = nrs[index];
 
     let mut total: u64 = nrs[0];
     let mut j = 0;
     for i in 0..index - 1 {
-        while total <= *sum {
-            if total == *sum {
+        while total <= sum {
+            if total == sum {
                 return (i, j);
             }
 
