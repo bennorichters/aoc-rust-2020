@@ -24,21 +24,17 @@ fn solve() {
     let mut nrs: Vec<u64> = lines.iter().map(|x| x.parse::<u64>().unwrap()).collect();
 
     nrs.sort();
-    let mut x = 0;
+    let mut previous = 0;
     let mut diff_one = 0;
     let mut diff_three = 0;
     for i in nrs {
-        match i - x {
-            1 => {
-                diff_one += 1;
-                x += 1;
-            }
-            3 => {
-                diff_three += 1;
-                x += 3;
-            }
+        match i - previous {
+            1 => diff_one += 1,
+            3 => diff_three += 1,
             _ => panic!("unexpected diff"),
         }
+
+        previous = i;
     }
 
     diff_three += 1;
