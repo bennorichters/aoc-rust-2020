@@ -22,60 +22,28 @@ fn main() {
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Coordinate {
-    x: u8,
-    y: u8,
+    x: i8,
+    y: i8,
 }
 
+const DELTAS: [(i8, i8); 8] = [
+    (-1, -1),
+    (-1, 0),
+    (-1, 1),
+    (0, -1),
+    (0, 1),
+    (1, -1),
+    (1, 0),
+    (1, 1),
+];
 impl Coordinate {
-    fn neighbours(&self, max_x: u8, max_y: u8) -> Vec<Coordinate> {
+    fn neighbours(&self, max_x: i8, max_y: i8) -> Vec<Coordinate> {
         let mut result: Vec<Coordinate> = Vec::new();
 
-        if self.x > 0 {
-            if self.y > 0 {
-                result.push(Coordinate {
-                    x: self.x - 1,
-                    y: self.y - 1,
-                });
-            }
-            result.push(Coordinate {
-                x: self.x - 1,
-                y: self.y,
-            });
-            if self.y < max_y {
-                result.push(Coordinate {
-                    x: self.x - 1,
-                    y: self.y + 1,
-                });
-            }
-        }
-        if self.y > 0 {
-            result.push(Coordinate {
-                x: self.x,
-                y: self.y - 1,
-            });
-        }
-        if self.y < max_y {
-            result.push(Coordinate {
-                x: self.x,
-                y: self.y + 1,
-            });
-        }
-        if self.x < max_x {
-            if self.y > 0 {
-                result.push(Coordinate {
-                    x: self.x + 1,
-                    y: self.y - 1,
-                });
-            }
-            result.push(Coordinate {
-                x: self.x + 1,
-                y: self.y,
-            });
-            if self.y < max_y {
-                result.push(Coordinate {
-                    x: self.x + 1,
-                    y: self.y + 1,
-                });
+        for d in DELTAS {
+            let nb = (self.x + d.0, self.y + d.1);
+            if nb.0 >= 0 && nb.0 <= max_x && nb.1 >= 0 && nb.1 <= max_y {
+                result.push(Coordinate { x: nb.0, y: nb.1 });
             }
         }
 
@@ -91,17 +59,18 @@ enum Position {
 }
 
 struct Floor {
-    width: u8,
-    height: u8,
+    map: HashMap<Coordinate, Position>,
+    width: i8,
+    height: i8,
 }
 
 impl Floor {
-    fn print(&self, map: &HashMap<Coordinate, Position>) {
+    fn print(&self) {
         for y in 0..self.height {
             let mut line = String::new();
             for x in 0..self.width {
                 let coord = Coordinate { x, y };
-                let pos = map.get(&coord).unwrap();
+                let pos = self.map.get(&coord).unwrap();
                 line.push(match pos {
                     Position::Free => 'L',
                     Position::Occupied => '#',
@@ -112,43 +81,52 @@ impl Floor {
         }
     }
 
-    fn occupied_neighbours(&self, map: &HashMap<Coordinate, Position>, seat: &Coordinate) -> u8 {
+    fn occupied_neighbours(&self, seat: &Coordinate) -> i8 {
         seat.neighbours(self.width - 1, self.height - 1)
             .iter()
-            .filter(|x| matches!(map.get(x).unwrap(), Position::Occupied))
-            .count() as u8
+            .filter(|x| matches!(self.map.get(x).unwrap(), Position::Occupied))
+            .count() as i8
     }
 
-    fn step(&self, map: &HashMap<Coordinate, Position>) -> HashMap<Coordinate, Position> {
-        let mut result: HashMap<Coordinate, Position> = HashMap::new();
-        for c in map.keys() {
-            let step_position: Position = match map.get(c).unwrap() {
+    fn step(&mut self) -> bool {
+        let mut step_map: HashMap<Coordinate, Position> = HashMap::new();
+        for c in self.map.keys() {
+            let step_position: Position = match self.map.get(c).unwrap() {
                 Position::Floor => Position::Floor,
-                Position::Free => match self.occupied_neighbours(&map, &c) {
+                Position::Free => match self.occupied_neighbours(&c) {
                     0 => Position::Occupied,
                     _ => Position::Free,
                 },
-                Position::Occupied => match self.occupied_neighbours(&map, &c) {
+                Position::Occupied => match self.occupied_neighbours(&c) {
                     0..=3 => Position::Occupied,
                     _ => Position::Free,
                 },
             };
 
-            result.insert(Coordinate { x: c.x, y: c.y }, step_position);
+            step_map.insert(Coordinate { x: c.x, y: c.y }, step_position);
         }
 
+        let result = self.maps_equal(&step_map);
+        self.map = step_map;
         result
     }
-}
 
-fn maps_equal(map1: &HashMap<Coordinate, Position>, map2: &HashMap<Coordinate, Position>) -> bool {
-    for c in map1.keys() {
-        if map1.get(c).unwrap() != map2.get(c).unwrap() {
-            return false;
+    fn maps_equal(&self, other_map: &HashMap<Coordinate, Position>) -> bool {
+        for c in self.map.keys() {
+            if self.map.get(c).unwrap() != other_map.get(c).unwrap() {
+                return false;
+            }
         }
+
+        true
     }
 
-    true
+    fn count_occupied(&self) -> usize {
+        self.map
+            .keys()
+            .filter(|x| matches!(self.map.get(x).unwrap(), Position::Occupied))
+            .count()
+    }
 }
 
 fn solve() {
@@ -158,8 +136,8 @@ fn solve() {
     for (y, line) in lines.iter().enumerate() {
         for (x, c) in line.chars().enumerate() {
             let coord = Coordinate {
-                x: x as u8,
-                y: y as u8,
+                x: x as i8,
+                y: y as i8,
             };
             let pos = match c {
                 '.' => Position::Floor,
@@ -171,19 +149,16 @@ fn solve() {
         }
     }
 
-    let width = lines[0].len() as u8;
-    let height = lines.len() as u8;
+    let width = lines[0].len() as i8;
+    let height = lines.len() as i8;
 
-    let floor = Floor { width, height };
+    let mut floor = Floor { map, width, height };
     loop {
-        let step_map = floor.step(&map);
-        if maps_equal(&map, &step_map) {
+        if floor.step() {
             break;
         }
-
-        map = step_map;
     }
 
-    let result = map.keys().filter(|x| matches!(map.get(x).unwrap(), Position::Occupied)).count();
+    let result = floor.count_occupied();
     println!("{}", result);
 }
