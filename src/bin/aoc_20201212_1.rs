@@ -47,8 +47,8 @@ fn solve() {
 
 fn change_direction(d: &Direction, degree: i64) -> Direction {
     let turns = degree / 90;
-    let mut result = turn_ninety_degrees(&d);
-    for _ in 0..(turns - 1) {
+    let mut result = d.clone();
+    for _ in 0..turns {
         result = turn_ninety_degrees(&result);
     }
 
@@ -73,6 +73,7 @@ fn action(d: &Direction, n: i64, pos: (i64, i64)) -> (i64, i64) {
     }
 }
 
+#[derive(Debug, Clone)]
 enum Direction {
     North,
     East,
