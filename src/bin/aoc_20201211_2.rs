@@ -36,20 +36,6 @@ const DELTAS: [(i8, i8); 8] = [
     (1, 0),
     (1, 1),
 ];
-impl Coordinate {
-    fn neighbours(&self, max_x: i8, max_y: i8) -> Vec<Coordinate> {
-        let mut result: Vec<Coordinate> = Vec::new();
-
-        for d in DELTAS {
-            let nb = (self.x + d.0, self.y + d.1);
-            if nb.0 >= 0 && nb.0 <= max_x && nb.1 >= 0 && nb.1 <= max_y {
-                result.push(Coordinate { x: nb.0, y: nb.1 });
-            }
-        }
-
-        result
-    }
-}
 
 #[derive(Debug, PartialEq)]
 enum Position {
@@ -82,10 +68,24 @@ impl Floor {
     }
 
     fn occupied_neighbours(&self, seat: &Coordinate) -> i8 {
-        seat.neighbours(self.width - 1, self.height - 1)
-            .iter()
-            .filter(|x| matches!(self.map.get(x).unwrap(), Position::Occupied))
-            .count() as i8
+        let mut result = 0;
+        for d in DELTAS {
+            let mut nb = (seat.x + d.0, seat.y + d.1);
+            while nb.0 >= 0 && nb.0 < self.width && nb.1 >= 0 && nb.1 < self.height {
+                match self.map.get(&Coordinate { x: nb.0, y: nb.1 }).unwrap() {
+                    Position::Free => break,
+                    Position::Occupied => {
+                        result += 1;
+                        break;
+                    }
+                    _ => (),
+                }
+
+               nb = (nb.0 + d.0, nb.1 + d.1);
+            }
+        }
+
+        result
     }
 
     fn step(&mut self) -> bool {
@@ -98,7 +98,7 @@ impl Floor {
                     _ => Position::Free,
                 },
                 Position::Occupied => match self.occupied_neighbours(&c) {
-                    0..=3 => Position::Occupied,
+                    0..=4 => Position::Occupied,
                     _ => Position::Free,
                 },
             };
