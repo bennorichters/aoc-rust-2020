@@ -18,7 +18,7 @@ fn solve() {
 
     let mut x: u32 = *(v.last().unwrap());
 
-    for t in v.len()..2020 {
+    for t in v.len()..30_000_000 {
         let y = if m.contains_key(&x) {
             (t as u32) - m.get(&x).unwrap()
         } else {
