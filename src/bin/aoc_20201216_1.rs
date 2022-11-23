@@ -20,16 +20,23 @@ fn main() {
 }
 
 fn solve() {
-    let lines = lines_from_file("tin");
+    let lines = lines_from_file("in");
 
     let mut iter = lines.split(|e| e.is_empty());
-    let a = field_ranges(iter.next().unwrap());
-    println!("{:?}", a);
+    let ranges = field_ranges(iter.next().unwrap());
 
-    iter.next(); // ignore this ticket section
-    
-    let b = ticket_numbers(iter.next().unwrap());
-    println!("{:?}", b);
+    iter.next(); // ignore own ticket section
+
+    let nrs = ticket_numbers(iter.next().unwrap());
+
+    let mut result: u32 = 0;
+    for n in nrs {
+        if !ranges.iter().any(|&r| ((r.0)..(r.1 + 1)).contains(&n)) {
+            result += n;
+        }
+    }
+
+    println!("{}", result);
 }
 
 fn field_ranges(lines: &[String]) -> Vec<(u32, u32)> {
