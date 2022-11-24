@@ -65,22 +65,13 @@ fn numbers_per_column(
     nearby_lines: &[String],
 ) -> HashMap<u32, HashSet<u32>> {
     
-    // let a = [&your_lines[1..], &nearby_lines[1..]].concat();
-
-    let mut result: HashMap<u32, HashSet<u32>> = nearby_tickets(&nearby_lines);
-
-    let your_nrs: Vec<&str> = your_lines[1].split(",").collect();
-    for (i, nr) in your_nrs.iter().enumerate() {
-        let a = result.get_mut(&(i as u32)).unwrap();
-        a.insert(nr.parse::<u32>().unwrap());
-    }
-
-    result
+    let a = [&your_lines[1..], &nearby_lines[1..]].concat();
+    nearby_tickets(&a)
 }
 
 fn nearby_tickets(lines: &[String]) -> HashMap<u32, HashSet<u32>> {
     let mut result: HashMap<u32, HashSet<u32>> = HashMap::new();
-    for (r, line) in lines[1..].iter().enumerate() {
+    for (r, line) in lines.iter().enumerate() {
         let nrs: Vec<&str> = line.split(",").collect();
         for (c, nr) in nrs.iter().enumerate() {
             result
