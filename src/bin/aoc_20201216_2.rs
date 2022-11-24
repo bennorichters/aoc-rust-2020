@@ -60,16 +60,12 @@ fn field_ranges(lines: &[String]) -> HashMap<&str, Field> {
     result
 }
 
-fn numbers_per_column(
-    your_lines: &[String],
-    nearby_lines: &[String],
-) -> HashMap<u32, HashSet<u32>> {
-    
-    let a = [&your_lines[1..], &nearby_lines[1..]].concat();
-    nearby_tickets(&a)
+fn numbers_per_column(you: &[String], nearby: &[String]) -> HashMap<u32, HashSet<u32>> {
+    let a = [&you[1..], &nearby[1..]].concat();
+    parse_numbers(&a)
 }
 
-fn nearby_tickets(lines: &[String]) -> HashMap<u32, HashSet<u32>> {
+fn parse_numbers(lines: &[String]) -> HashMap<u32, HashSet<u32>> {
     let mut result: HashMap<u32, HashSet<u32>> = HashMap::new();
     for (r, line) in lines.iter().enumerate() {
         let nrs: Vec<&str> = line.split(",").collect();
