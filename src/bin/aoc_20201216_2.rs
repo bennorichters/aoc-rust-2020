@@ -2,7 +2,7 @@
 #![allow(unused_variables)]
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs::File,
     io::{prelude::*, BufReader},
     path::Path,
@@ -24,13 +24,10 @@ fn solve() {
     let lines = lines_from_file("tin");
 
     let mut iter = lines.split(|e| e.is_empty());
-    // println!("{:?}", iter.next().unwrap());
-    // println!("{:?}", iter.next());
-    // println!("{:?}", iter.next());
     let a = field_ranges(iter.next().unwrap());
     println!("{:?}", a);
 
-    let b = ticket_numbers(iter.next().unwrap());
+    let b = numbers_per_column(iter.next().unwrap(), iter.next().unwrap());
     println!("{:?}", b);
 }
 
@@ -63,15 +60,33 @@ fn field_ranges(lines: &[String]) -> HashMap<&str, Field> {
     result
 }
 
-fn ticket_numbers(lines: &[String]) -> HashMap<u32, Vec<u32>> {
-    let mut result: HashMap<u32, Vec<u32>> = HashMap::new();
+fn numbers_per_column(
+    your_lines: &[String],
+    nearby_lines: &[String],
+) -> HashMap<u32, HashSet<u32>> {
+    
+    // let a = [&your_lines[1..], &nearby_lines[1..]].concat();
+
+    let mut result: HashMap<u32, HashSet<u32>> = nearby_tickets(&nearby_lines);
+
+    let your_nrs: Vec<&str> = your_lines[1].split(",").collect();
+    for (i, nr) in your_nrs.iter().enumerate() {
+        let a = result.get_mut(&(i as u32)).unwrap();
+        a.insert(nr.parse::<u32>().unwrap());
+    }
+
+    result
+}
+
+fn nearby_tickets(lines: &[String]) -> HashMap<u32, HashSet<u32>> {
+    let mut result: HashMap<u32, HashSet<u32>> = HashMap::new();
     for (r, line) in lines[1..].iter().enumerate() {
         let nrs: Vec<&str> = line.split(",").collect();
         for (c, nr) in nrs.iter().enumerate() {
             result
                 .entry(c as u32)
-                .or_insert(Vec::new())
-                .push(nr.parse::<u32>().unwrap());
+                .or_insert(HashSet::new())
+                .insert(nr.parse::<u32>().unwrap());
         }
     }
 
