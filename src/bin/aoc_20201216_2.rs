@@ -51,24 +51,25 @@ struct Data<'a> {
 }
 
 impl Data<'_> {
-    // fn rec_process(&self, field_options: &[&str], solution: Vec<&str>) {
-    //     if solution.len() == 9 || field_options.is_empty() {
-    //         println!("----> {:?}", solution);
-    //         std::process::exit(1);
-    //         // return;
-    //     }
-    //     // println!("{:?} ---- {:?}", field_options, solution);
+    fn rec_process(&self, field_options: &[&str], solution: Vec<u32>) {
+        if field_options.len() == 0 {
+            println!("{:?}", solution);
+            self.departure_values(solution);
+            return;
+        }
 
-    //     let column = solution.len() as u32;
-    //     for (i, field) in field_options.iter().enumerate() {
-    //         if self.is_possible(field, self.columns.get(&column).unwrap()) {
-    //             let rec_fields = &[&field_options[..i], &field_options[(i + 1)..]].concat();
-    //             let mut rec_solution = solution.clone();
-    //             rec_solution.push(&field);
-    //             self.rec_process(rec_fields, rec_solution);
-    //         }
-    //     }
-    // }
+        let field = field_options[0];
+        for c in 0..self.fields.len() {
+            if !solution.contains(&(c as u32))
+                && self.is_possible(field, self.columns.get(c).unwrap())
+            {
+                let rec_fields = &field_options[1..];
+                let mut rec_solution = solution.clone();
+                rec_solution.push(c as u32);
+                self.rec_process(rec_fields, rec_solution);
+            }
+        }
+    }
 
     fn is_possible(&self, field: &str, column_numbers: &HashSet<u32>) -> bool {
         let ranges: &Field = self.fields.get(field).unwrap();
@@ -79,6 +80,10 @@ impl Data<'_> {
             .iter()
             .all(|&e| r1.contains(&e) || r2.contains(&e))
     }
+
+    fn departure_values(&self, solution: Vec<u32>) {
+       // for (i, f) in  
+    }
 }
 
 fn process(fields: HashMap<&str, Field>, columns: &Vec<HashSet<u32>>) {
@@ -86,21 +91,9 @@ fn process(fields: HashMap<&str, Field>, columns: &Vec<HashSet<u32>>) {
         fields: &fields,
         columns: &columns,
     };
-    let field_options = fields.keys().cloned().collect::<Vec<&str>>();
-    let solution: Vec<&str> = Vec::new();
 
-    // for field in field_options {
-    //     let mut count = 0;
-    //     for column_numbers in columns {
-    //         if data.is_possible(field, &column_numbers) {
-    //             count += 1;
-    //         }
-    //     }
-    //     println!("{}: {}", field, count);
-    // }
-
-    let a: HashMap<&str, u32> = field_options
-        .iter()
+    let field_possible_cols: HashMap<&str, u32> = fields
+        .keys()
         .map(|&e| {
             (
                 e,
@@ -109,11 +102,18 @@ fn process(fields: HashMap<&str, Field>, columns: &Vec<HashSet<u32>>) {
         })
         .collect();
 
-    let mut b: Vec<_> = a.iter().collect();
-    b.sort_by(|a, b| a.1.cmp(b.1));
+    let mut fields_sorted: Vec<_> = field_possible_cols.iter().collect();
+    fields_sorted.sort_by(|a, b| a.1.cmp(b.1));
 
-    println!("{:?}", a);
-    println!("{:?}", b);
+    let field_options: Vec<&str> = fields_sorted.iter().map(|e| *e.0).collect();
+
+    let solution: Vec<u32> = Vec::new();
+
+    // println!("{:?}", field_possible_cols);
+    // println!("{:?}", fields_sorted);
+    println!("{:?}", field_options);
+    data.rec_process(&field_options, solution);
+
     println!("Ready!");
 }
 
