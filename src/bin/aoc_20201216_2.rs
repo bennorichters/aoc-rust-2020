@@ -18,10 +18,6 @@ fn lines_from_file(filename: impl AsRef<Path>) -> Vec<String> {
 
 fn main() {
     solve();
-    // let a = vec![0, 1, 2, 3, 4, 5];
-    // let x = 5;
-    // let b = [&a[..x], &a[(x + 1)..]].concat();
-    // println!("{:?}", b);
 }
 
 type Field = ((u32, u32), (u32, u32));
@@ -41,36 +37,38 @@ fn solve() {
     let parsed = parse_numbers(&([&your[1..], &nearby[1..]].concat()));
 
     let valid = valid_tickets(parsed, ranges);
+    // println!("{:?}", valid);
 
     let columns = numbers_per_column(valid);
     // println!("{:?}", columns);
 
-    process(fields, columns);
+    process(fields, &columns);
 }
 
 struct Data<'a> {
     fields: &'a HashMap<&'a str, Field>,
-    columns: &'a HashMap<u32, HashSet<u32>>,
+    columns: &'a Vec<HashSet<u32>>,
 }
 
 impl Data<'_> {
-    fn rec_process(&self, field_options: &[&str], solution: Vec<&str>) {
-        // println!("{:?} ---- {:?}", field_options, solution);
-        if field_options.is_empty() {
-            println!("----> {:?}", solution);
-            return;
-        }
+    // fn rec_process(&self, field_options: &[&str], solution: Vec<&str>) {
+    //     if solution.len() == 9 || field_options.is_empty() {
+    //         println!("----> {:?}", solution);
+    //         std::process::exit(1);
+    //         // return;
+    //     }
+    //     // println!("{:?} ---- {:?}", field_options, solution);
 
-        let column = solution.len() as u32;
-        for (i, field) in field_options.iter().enumerate() {
-            if self.is_possible(field, self.columns.get(&column).unwrap()) {
-                let rec_fields = &[&field_options[..i], &field_options[(i + 1)..]].concat();
-                let mut rec_solution = solution.clone();
-                rec_solution.push(&field);
-                self.rec_process(rec_fields, rec_solution);
-            }
-        }
-    }
+    //     let column = solution.len() as u32;
+    //     for (i, field) in field_options.iter().enumerate() {
+    //         if self.is_possible(field, self.columns.get(&column).unwrap()) {
+    //             let rec_fields = &[&field_options[..i], &field_options[(i + 1)..]].concat();
+    //             let mut rec_solution = solution.clone();
+    //             rec_solution.push(&field);
+    //             self.rec_process(rec_fields, rec_solution);
+    //         }
+    //     }
+    // }
 
     fn is_possible(&self, field: &str, column_numbers: &HashSet<u32>) -> bool {
         let ranges: &Field = self.fields.get(field).unwrap();
@@ -83,7 +81,7 @@ impl Data<'_> {
     }
 }
 
-fn process(fields: HashMap<&str, Field>, columns: HashMap<u32, HashSet<u32>>) {
+fn process(fields: HashMap<&str, Field>, columns: &Vec<HashSet<u32>>) {
     let data = Data {
         fields: &fields,
         columns: &columns,
@@ -91,8 +89,32 @@ fn process(fields: HashMap<&str, Field>, columns: HashMap<u32, HashSet<u32>>) {
     let field_options = fields.keys().cloned().collect::<Vec<&str>>();
     let solution: Vec<&str> = Vec::new();
 
-    println!("{:?}", field_options);
-    data.rec_process(&field_options, solution);
+    // for field in field_options {
+    //     let mut count = 0;
+    //     for column_numbers in columns {
+    //         if data.is_possible(field, &column_numbers) {
+    //             count += 1;
+    //         }
+    //     }
+    //     println!("{}: {}", field, count);
+    // }
+
+    let a: HashMap<&str, u32> = field_options
+        .iter()
+        .map(|&e| {
+            (
+                e,
+                columns.iter().filter(|&f| data.is_possible(e, &f)).count() as u32,
+            )
+        })
+        .collect();
+
+    let mut b: Vec<_> = a.iter().collect();
+    b.sort_by(|a, b| a.1.cmp(b.1));
+
+    println!("{:?}", a);
+    println!("{:?}", b);
+    println!("Ready!");
 }
 
 fn field_ranges(lines: &[String]) -> HashMap<&str, Field> {
@@ -144,12 +166,14 @@ fn valid_tickets(tickets: Vec<Vec<u32>>, ranges: Vec<(u32, u32)>) -> Vec<Vec<u32
         .collect()
 }
 
-fn numbers_per_column(tickets: Vec<Vec<u32>>) -> HashMap<u32, HashSet<u32>> {
-    let mut result: HashMap<u32, HashSet<u32>> = HashMap::new();
-    for ticket in tickets {
-        for (c, nr) in ticket.iter().enumerate() {
-            result.entry(c as u32).or_insert(HashSet::new()).insert(*nr);
+fn numbers_per_column(tickets: Vec<Vec<u32>>) -> Vec<HashSet<u32>> {
+    let mut result: Vec<HashSet<u32>> = Vec::new();
+    for i in 0..(tickets[0].len()) {
+        let mut column: HashSet<u32> = HashSet::new();
+        for j in 0..tickets.len() {
+            column.insert(tickets[j][i]);
         }
+        result.push(column);
     }
 
     result
