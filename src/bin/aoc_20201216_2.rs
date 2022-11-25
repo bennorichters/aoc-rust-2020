@@ -24,11 +24,23 @@ fn solve() {
     let lines = lines_from_file("tin");
 
     let mut iter = lines.split(|e| e.is_empty());
-    let a = field_ranges(iter.next().unwrap());
-    println!("{:?}", a);
+    let fields = field_ranges(iter.next().unwrap());
+    println!("{:?}", fields);
 
-    let b = numbers_per_column(iter.next().unwrap(), iter.next().unwrap());
-    println!("{:?}", b);
+    let field_values: Vec<[(u32, u32); 2]> = fields.values().map(|e| [e.0, e.1]).collect();
+    let ranges: Vec<(u32, u32)> = field_values.concat();
+    println!("{:?}", ranges);
+
+    let your = iter.next().unwrap();
+    let nearby = iter.next().unwrap();
+    let parsed = parse_numbers(&([&your[1..], &nearby[1..]].concat()));
+    println!("{:?}", parsed);
+
+    let valid = valid_tickets(parsed, ranges);
+    println!("{:?}", valid);
+
+    let columns = numbers_per_column(valid);
+    println!("{:?}", columns);
 }
 
 type Field = ((u32, u32), (u32, u32));
@@ -60,20 +72,32 @@ fn field_ranges(lines: &[String]) -> HashMap<&str, Field> {
     result
 }
 
-fn numbers_per_column(you: &[String], nearby: &[String]) -> HashMap<u32, HashSet<u32>> {
-    let a = [&you[1..], &nearby[1..]].concat();
-    parse_numbers(&a)
+fn parse_numbers(lines: &[String]) -> Vec<Vec<u32>> {
+    let mut result: Vec<Vec<u32>> = Vec::new();
+    for line in lines {
+        let strnrs: Vec<&str> = line.split(",").collect();
+        let nrs: Vec<u32> = strnrs.iter().map(|e| e.parse::<u32>().unwrap()).collect();
+        result.push(nrs);
+    }
+
+    result
 }
 
-fn parse_numbers(lines: &[String]) -> HashMap<u32, HashSet<u32>> {
+fn valid_tickets(tickets: Vec<Vec<u32>>, ranges: Vec<(u32, u32)>) -> Vec<Vec<u32>> {
+    tickets
+        .into_iter()
+        .filter(|a| {
+            a.into_iter()
+                .all(|b| ranges.iter().any(|r| ((r.0)..(r.1 + 1)).contains(b)))
+        })
+        .collect()
+}
+
+fn numbers_per_column(tickets: Vec<Vec<u32>>) -> HashMap<u32, HashSet<u32>> {
     let mut result: HashMap<u32, HashSet<u32>> = HashMap::new();
-    for (r, line) in lines.iter().enumerate() {
-        let nrs: Vec<&str> = line.split(",").collect();
-        for (c, nr) in nrs.iter().enumerate() {
-            result
-                .entry(c as u32)
-                .or_insert(HashSet::new())
-                .insert(nr.parse::<u32>().unwrap());
+    for ticket in tickets {
+        for (c, nr) in ticket.iter().enumerate() {
+            result.entry(c as u32).or_insert(HashSet::new()).insert(*nr);
         }
     }
 
