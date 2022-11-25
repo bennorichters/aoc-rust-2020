@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 use std::{
     collections::{HashMap, HashSet},
     fs::File,
@@ -27,7 +24,6 @@ fn solve() {
 
     let mut iter = lines.split(|e| e.is_empty());
     let fields = field_ranges(iter.next().unwrap());
-    // println!("{:?}", fields);
 
     let field_values: Vec<[(u32, u32); 2]> = fields.values().map(|e| [e.0, e.1]).collect();
     let ranges: Vec<(u32, u32)> = field_values.concat();
@@ -37,12 +33,9 @@ fn solve() {
     let parsed = parse_numbers(&([&your[1..], &nearby[1..]].concat()));
 
     let valid = valid_tickets(parsed, ranges);
-    // println!("{:?}", valid);
+    let columns = numbers_per_column(&valid);
 
-    let columns = numbers_per_column(valid);
-    // println!("{:?}", columns);
-
-    process(fields, &columns);
+    process(fields, &columns, &valid[0]);
 }
 
 struct Data<'a> {
@@ -51,11 +44,9 @@ struct Data<'a> {
 }
 
 impl Data<'_> {
-    fn rec_process(&self, field_options: &[&str], solution: Vec<u32>) {
+    fn rec_process(&self, field_options: &[&str], solution: Vec<u32>) -> Option<Vec<u32>> {
         if field_options.len() == 0 {
-            println!("{:?}", solution);
-            self.departure_values(solution);
-            return;
+            return Some(solution);
         }
 
         let field = field_options[0];
@@ -66,9 +57,14 @@ impl Data<'_> {
                 let rec_fields = &field_options[1..];
                 let mut rec_solution = solution.clone();
                 rec_solution.push(c as u32);
-                self.rec_process(rec_fields, rec_solution);
+                let result = self.rec_process(rec_fields, rec_solution);
+                if result.is_some() {
+                    return result;
+                }
             }
         }
+
+        None
     }
 
     fn is_possible(&self, field: &str, column_numbers: &HashSet<u32>) -> bool {
@@ -80,13 +76,9 @@ impl Data<'_> {
             .iter()
             .all(|&e| r1.contains(&e) || r2.contains(&e))
     }
-
-    fn departure_values(&self, solution: Vec<u32>) {
-       // for (i, f) in  
-    }
 }
 
-fn process(fields: HashMap<&str, Field>, columns: &Vec<HashSet<u32>>) {
+fn process(fields: HashMap<&str, Field>, columns: &Vec<HashSet<u32>>, your: &Vec<u32>) {
     let data = Data {
         fields: &fields,
         columns: &columns,
@@ -101,20 +93,22 @@ fn process(fields: HashMap<&str, Field>, columns: &Vec<HashSet<u32>>) {
             )
         })
         .collect();
-
     let mut fields_sorted: Vec<_> = field_possible_cols.iter().collect();
     fields_sorted.sort_by(|a, b| a.1.cmp(b.1));
-
     let field_options: Vec<&str> = fields_sorted.iter().map(|e| *e.0).collect();
 
     let solution: Vec<u32> = Vec::new();
 
-    // println!("{:?}", field_possible_cols);
-    // println!("{:?}", fields_sorted);
-    println!("{:?}", field_options);
-    data.rec_process(&field_options, solution);
+    let field_mapping: Vec<u32> = data.rec_process(&field_options, solution).unwrap();
 
-    println!("Ready!");
+    let mut result: u64 = 1;
+    for (i, field) in field_options.iter().enumerate() {
+        if field.starts_with("departure") {
+            let index: u32 = field_mapping[i];
+            result *= your[index as usize] as u64;
+        }
+    }
+    println!("{}", result);
 }
 
 fn field_ranges(lines: &[String]) -> HashMap<&str, Field> {
@@ -166,7 +160,7 @@ fn valid_tickets(tickets: Vec<Vec<u32>>, ranges: Vec<(u32, u32)>) -> Vec<Vec<u32
         .collect()
 }
 
-fn numbers_per_column(tickets: Vec<Vec<u32>>) -> Vec<HashSet<u32>> {
+fn numbers_per_column(tickets: &Vec<Vec<u32>>) -> Vec<HashSet<u32>> {
     let mut result: Vec<HashSet<u32>> = Vec::new();
     for i in 0..(tickets[0].len()) {
         let mut column: HashSet<u32> = HashSet::new();
