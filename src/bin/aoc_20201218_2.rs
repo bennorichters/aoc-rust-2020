@@ -16,17 +16,7 @@ fn lines_from_file(filename: impl AsRef<Path>) -> Vec<String> {
 }
 
 fn main() {
-    // solve();
-    let a = "5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))";
-    let b = a.replace(" ", "");
-    // let b = a.find('+').unwrap();
-    // let c = group_plus(a, b);
-    // println!("{}", c);
-
-    let c = group_all_plusses(&b);
-    println!("{}", c);
-    let d = calc(&c); 
-    println!("{}", d);
+    solve();
 }
 
 fn solve() {
@@ -35,7 +25,8 @@ fn solve() {
     let mut result: u64 = 0;
     for line in lines {
         let s = line.replace(" ", "");
-        result += calc(&s);
+        let p = group_all_plusses(&s);
+        result += calc(&p);
     }
 
     println!("{}", result);
