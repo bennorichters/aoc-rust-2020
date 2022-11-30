@@ -1,7 +1,8 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
+// #![allow(dead_code)]
+// #![allow(unused_variables)]
 
 use std::{
+    collections::HashMap,
     fs::File,
     io::{prelude::*, BufReader},
     path::Path,
@@ -17,24 +18,32 @@ fn lines_from_file(filename: impl AsRef<Path>) -> Vec<String> {
 
 fn main() {
     solve();
-    // let mut a: Vec<u32> = vec![0; 10];
-    // println!("{:?}", a);
-    // a[5] = 4;
-    // println!("{:?}", a);
-}
-
-struct Rule<'a> {
-    one: Option<&'a str>,
-    two: Option<&'a str>,
 }
 
 fn solve() {
-    let lines = lines_from_file("tin");
+    let lines = lines_from_file("in");
 
     let mut iter = lines.split(|e| e.is_empty());
     let rule_lines: &[String] = iter.next().unwrap();
     let rules = parse_rule_lines(rule_lines);
-    println!("{:?}", rules);
+    // println!("{:?}", rules);
+
+    let mut s = State {
+        rules,
+        resolved: HashMap::new(),
+    };
+    s.process(0);
+    let valid = s.resolved.get(&0).unwrap();
+    // println!("{:?}", valid);
+
+    let mut result = 0;
+    for message in iter.next().unwrap() {
+        if valid.contains(message) {
+            result += 1;
+        }
+    }
+
+    println!("{}", result);
 }
 
 fn parse_rule_lines(lines: &[String]) -> Vec<&str> {
@@ -43,26 +52,54 @@ fn parse_rule_lines(lines: &[String]) -> Vec<&str> {
     for line in lines {
         let s: Vec<&str> = line.split(": ").collect();
         let i: usize = s[0].parse().unwrap();
-        result[i] = s[1];
+        result[i] = if &s[1][0..1] == "\"" {
+            &s[1][1..2]
+        } else {
+            s[1]
+        };
     }
 
     result
 }
 
-fn substitute_rules(rules: Vec<&str>, nr: usize) -> Vec<&str> {
-    let r = rules[nr];
-    if r == "a" || r == "b" {
-        return vec![r];
-    }
-
-    let result: Vec<&str> = Vec::new();
-    let s: Vec<&str> = r.split("|");
-    for p in s {
-        let sub_rules: Vec<&str>  = p.trim().split(" ").collect();
-    
-
-    }
-    result
+struct State<'a> {
+    rules: Vec<&'a str>,
+    resolved: HashMap<usize, Vec<String>>,
 }
 
-// 4 4 4 5 | 4 4 5 4 | 5 5 4 5 | 5 5 5 4 | 
+impl State<'_> {
+    fn process(&mut self, rule_index: usize) {
+        if self.resolved.contains_key(&rule_index) {
+            return;
+        }
+        if self.rules[rule_index].eq("a") || self.rules[rule_index].eq("b") {
+            self.resolved
+                .insert(rule_index, vec![self.rules[rule_index].to_owned()]);
+            return;
+        }
+
+        let mut result: Vec<String> = Vec::new();
+        let two_options: Vec<&str> = self.rules[rule_index].split("|").collect();
+        for option in two_options {
+            let mut option_result = vec!["".to_owned()];
+            let elements: Vec<&str> = (option.trim()).split(" ").collect();
+            for el in elements {
+                let sub_rule_index = el.parse::<usize>().unwrap();
+                self.process(sub_rule_index);
+                let sub_rule = self.resolved.get(&sub_rule_index).unwrap();
+
+                let mut renewed_option_result: Vec<String> = Vec::new();
+                for current in option_result {
+                    for sub in sub_rule {
+                        renewed_option_result.push(format!("{}{}", current, sub));
+                    }
+                }
+                option_result = renewed_option_result;
+            }
+
+            result.append(&mut option_result);
+        }
+
+        self.resolved.insert(rule_index, result);
+    }
+}
