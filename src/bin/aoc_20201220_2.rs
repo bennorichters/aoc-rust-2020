@@ -28,6 +28,12 @@ static EAST: usize = 3;
 static SOUTH: usize = 1;
 static WEST: usize = 2;
 
+// Find one of the four tiles that are on a corner
+//   by identifying that they have two sides that do not match any other side of any other tile
+// Find out how many times that corner tile needs to be turned clocwise to be the left top corner
+//
+
+
 fn solve() {
     let tiles = parse();
     let mapped_sides = map_sides(&tiles);
@@ -40,6 +46,9 @@ fn solve() {
     println!("{:?}", sides[EAST]);
     println!("{:?}", sides[SOUTH]);
     println!("{:?}", sides[WEST]);
+
+    let t = necessary_turns(corner, &mapped_sides);
+    println!("{}", t);
 }
 
 fn find_a_corner(mapped_sides: &HashMap<Side, Option<LineUp>>) -> usize {
@@ -51,6 +60,31 @@ fn find_a_corner(mapped_sides: &HashMap<Side, Option<LineUp>>) -> usize {
     }
 
     panic!("No corner found");
+}
+
+fn necessary_turns(corner: usize, mapped_sides: &HashMap<Side, Option<LineUp>>) -> usize {
+    let north = mapped_sides.get(&(corner, NORTH)).unwrap().is_none();
+    let east = mapped_sides.get(&(corner, EAST)).unwrap().is_none();
+    let south = mapped_sides.get(&(corner, SOUTH)).unwrap().is_none();
+    let west = mapped_sides.get(&(corner, WEST)).unwrap().is_none();
+
+    if north && west {
+        return 0;
+    }
+    
+    if south && west {
+        return 1;
+    }
+
+    if east && south {
+        return 2;
+    }
+
+    if north && east {
+        return 3;
+    }
+
+    panic!("Unexpected sides without line-ups");
 }
 
 fn map_sides(tiles: &HashMap<usize, Vec<Vec<bool>>>) -> HashMap<Side, Option<LineUp>> {
@@ -116,6 +150,8 @@ fn parse() -> HashMap<usize, Vec<Vec<bool>>> {
         }
         sides.push(west);
         sides.push(east);
+        sides[SOUTH].reverse(); // Clockwise
+        sides[WEST].reverse(); // Clockwise
         tiles.insert(nr, sides);
     }
 
