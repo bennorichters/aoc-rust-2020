@@ -26,24 +26,6 @@ static EAST: usize = 3;
 static SOUTH: usize = 1;
 static WEST: usize = 2;
 
-// Find one of the four tiles that are on a corner
-//   by identifying that they have two sides that do not match any other side of any other tile
-// Find out how many times that corner tile needs to be turned clocwise to be the left top corner
-// Keep a map of tiles and how they were transformed <key, (turns: [0,1,2,3], flipped: Y/N)>
-// Add first corner tile to transform_map
-// Keep map of coordinates and tiles <(x,y), key>
-// Insert coord (0,0) mapped to first corner tile
-// Fill the row by
-//   looking at is now the east side of the right most tile
-//   find the tile that lines up with that side
-//   if the lineup is NOT reversed (i.e. LineUp.1 = false), the tile needs to be flipped
-//   rotate the tile so that the matching side is on the west side
-//   update the transformation mao and the coordinates map
-// Start to fill the new row by
-//   find the tile that lines up with the south side of the first tile in the row above
-//   flip if necesssary and rotate so that the matching side is on the north side
-//   update both maps and continue the row as described above
-
 fn main() {
     let tiles = parse();
     let mapped_sides = map_sides(&tiles);
@@ -60,6 +42,24 @@ fn main() {
 
     puzzle.solve();
 }
+
+// Find one of the four tiles that are on a corner
+//   by identifying that it has two sides that do not match any other side of any other tile
+// Find out how many times that corner tile needs to be turned clocwise to be the top left corner
+// Keep a map of tiles and how they were transformed <key, (turns: [0,1,2,3], flipped: [Y/N])>
+// Add first corner tile to transform_map
+// Keep map of coordinates and tiles <(x,y), key>
+// Insert coord (0,0) mapped to first corner tile
+// Fill the row by
+//   looking at what is now the east side of the right most tile of that row
+//   find the tile that lines up with that side
+//   if the lineup is NOT reversed (i.e. LineUp.1 = false), the tile needs to be flipped
+//   rotate the tile so that the matching side is on the west side
+//   update the transformation map and the coordinates map
+// Start to fill the new row by
+//   find the tile that lines up with the south side of the leftmost tile in the row above
+//   flip if necesssary (see above) and rotate so that the matching side is on the north side
+//   update both maps and continue the row as described above
 
 struct Puzzle {
     tiles: HashMap<usize, Vec<Vec<bool>>>,
