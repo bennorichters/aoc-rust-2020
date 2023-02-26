@@ -1,5 +1,5 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
+// #![allow(dead_code)]
+// #![allow(unused_variables)]
 
 use std::{
     collections::{HashMap, HashSet},
@@ -61,7 +61,6 @@ fn main() {
 
     let mut puzzle = Puzzle {
         tiles_per_edge,
-        borders,
         mapped_sides,
         transforms,
         picture,
@@ -72,7 +71,6 @@ fn main() {
 
 struct Puzzle {
     tiles_per_edge: usize,
-    borders: HashMap<usize, Vec<Vec<bool>>>,
     mapped_sides: HashMap<Side, Option<LineUp>>,
     transforms: HashMap<usize, Transform>,
     picture: HashMap<Coord, usize>,
@@ -127,7 +125,6 @@ impl Puzzle {
 
     fn top_left_corner(&self) -> (usize, Transform) {
         let corner_key = self.find_a_corner();
-        let sides = self.borders.get(&corner_key).unwrap();
         let turns = self.top_left_turns(corner_key);
 
         (corner_key, (turns, false))
@@ -224,7 +221,7 @@ fn map_sides(borders: &HashMap<usize, Vec<Vec<bool>>>) -> HashMap<Side, Option<L
         let sides = tile.1;
 
         for (i, side) in sides.iter().enumerate() {
-            let line_up = find_match(borders, *key, &sides[i]);
+            let line_up = find_match(borders, *key, side);
             result.insert((*key, i), line_up);
         }
     }
