@@ -56,7 +56,7 @@ fn south_after_transform(transform: Transform) -> usize {
 
 fn translate(coord: Coord, transform: Transform) -> Coord {
     let mut result = (coord.0, if transform.1 { 9 - coord.1 } else { coord.1 });
-    for i in 0..transform.0 {
+    for _ in 0..transform.0 {
         result = rotate(result);
     }
 
@@ -88,8 +88,72 @@ fn solve() {
         transforms,
         arrangement,
     };
+    let picture = jigsaw.create_picture();
 
-    jigsaw.solve();
+    let size = tiles_per_edge * 8;
+    let monster = monster_arr();
+    let monster_length = monster[0].len();
+
+    let search_party = SearchParty {
+        picture,
+        size,
+        monster,
+        monster_length,
+    };
+    search_party.search();
+}
+
+const MONSTER_LINE_0: &str = "                  # ";
+const MONSTER_LINE_1: &str = "#    ##    ##    ###";
+const MONSTER_LINE_2: &str = " #  #  #  #  #  #   ";
+
+fn monster_arr() -> Vec<Vec<bool>> {
+    let m0 = MONSTER_LINE_0
+        .chars()
+        .map(|c| c == '#')
+        .collect::<Vec<bool>>();
+    let m1 = MONSTER_LINE_1
+        .chars()
+        .map(|c| c == '#')
+        .collect::<Vec<bool>>();
+    let m2 = MONSTER_LINE_2
+        .chars()
+        .map(|c| c == '#')
+        .collect::<Vec<bool>>();
+
+    vec![m0, m1, m2]
+}
+
+struct SearchParty {
+    picture: HashMap<Coord, bool>,
+    size: usize,
+    monster: Vec<Vec<bool>>,
+    monster_length: usize,
+}
+
+impl SearchParty {
+    fn search(&self) {
+        for y in 0..(self.size - 3) {
+            for x in 0..(self.size - self.monster_length) {
+                if self.is_here(x, y) {
+                    println!("HERE!");
+                }
+            }
+        }
+    }
+
+    fn is_here(&self, x: usize, y: usize) -> bool {
+        for (ry, row) in self.monster.iter().enumerate() {
+            for (rx, element) in row.iter().enumerate() {
+                let p = self.picture.get(&(rx + x, ry + y)).unwrap();
+                if *element && !p {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
 }
 
 struct Jigsaw {
@@ -101,7 +165,7 @@ struct Jigsaw {
 }
 
 impl Jigsaw {
-    fn solve(&mut self) {
+    fn create_picture(&mut self) -> HashMap<Coord, bool> {
         self.fill_all_rows();
 
         let mut result: HashMap<Coord, bool> = HashMap::new();
@@ -117,14 +181,8 @@ impl Jigsaw {
                 }
             }
         }
-        println!();
-        for y in 0..24 {
-            for x in 0..24 {
-                let c = result.get(&(x, y)).unwrap();
-                print!("{}", if *c { "#" } else { "." });
-            }
-            println!();
-        }
+
+        result
     }
 
     fn fill_all_rows(&mut self) {
@@ -137,13 +195,6 @@ impl Jigsaw {
             self.transforms.insert(left_most_key, left_most_transform);
 
             self.fill_row(y, left_most_key, left_most_transform);
-        }
-
-        for y in 0..self.tiles_per_edge {
-            for x in 0..self.tiles_per_edge {
-                print!("{} ", self.arrangement.get(&(x, y)).unwrap());
-            }
-            println!();
         }
     }
 
