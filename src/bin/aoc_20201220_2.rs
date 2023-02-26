@@ -52,8 +52,10 @@ fn south_after_transform(transform: Transform) -> usize {
 }
 
 fn main() {
-    let borders = parse();
-    let tiles_per_edge = int_sqrt(borders.len());
+    let tiles = parse();
+
+    let tiles_per_edge = int_sqrt(tiles.len());
+    let borders = borders(&tiles);
     let mapped_sides = map_sides(&borders);
 
     let transforms: HashMap<usize, Transform> = HashMap::new();
@@ -252,39 +254,45 @@ fn find_match(
     None
 }
 
+fn borders(tiles: &HashMap<usize, Vec<Vec<bool>>>) -> HashMap<usize, Vec<Vec<bool>>> {
+    let mut result: HashMap<usize, Vec<Vec<bool>>> = HashMap::new();
+
+    for (key, content) in tiles {
+        let north = content[0].clone();
+        let east = content.iter().map(|v| v[9]).collect::<Vec<bool>>();
+        let mut south = content[9].clone();
+        let mut west = content.iter().map(|v| v[0]).collect::<Vec<bool>>();
+
+        // Clockwise
+        south.reverse();
+        west.reverse();
+
+        result.insert(*key, vec![north, east, south, west]);
+    }
+
+    result
+}
+
 fn parse() -> HashMap<usize, Vec<Vec<bool>>> {
     let lines = lines_from_file("tin");
     let iter = lines.split(|e| e.is_empty());
 
-    let mut borders: HashMap<usize, Vec<Vec<bool>>> = HashMap::new();
+    let mut result: HashMap<usize, Vec<Vec<bool>>> = HashMap::new();
     for tile in iter {
         let mut lines = tile.iter();
-        let nr = (lines.next().unwrap()[5..9]).parse::<usize>().unwrap();
+        let key = (lines.next().unwrap()[5..9]).parse::<usize>().unwrap();
 
-        let mut sides: Vec<Vec<bool>> = vec![Vec::new(); 4];
-        let mut east: Vec<bool> = Vec::new();
-        let mut west: Vec<bool> = Vec::new();
-        for (y, line) in lines.enumerate() {
-            west.push(line.starts_with('#'));
-            east.push(line.ends_with('#'));
-            if y == 0 || y == 9 {
-                let mut side: Vec<bool> = Vec::new();
-                for c in line.chars() {
-                    side.push(c == '#');
-                }
-                if y == 0 {
-                    sides[NORTH] = side;
-                } else {
-                    sides[SOUTH] = side;
-                }
+        let mut rows: Vec<Vec<bool>> = Vec::new();
+        for line in lines {
+            let mut row: Vec<bool> = Vec::new();
+            for c in line.chars() {
+                row.push(c == '#');
             }
+            rows.push(row);
         }
-        sides[WEST] = west;
-        sides[EAST] = east;
-        sides[SOUTH].reverse(); // Clockwise
-        sides[WEST].reverse(); // Clockwise
-        borders.insert(nr, sides);
+
+        result.insert(key, rows);
     }
 
-    borders
+    result
 }
