@@ -52,16 +52,16 @@ fn south_after_transform(transform: Transform) -> usize {
 }
 
 fn main() {
-    let tiles = parse();
-    let tiles_per_edge = int_sqrt(tiles.len());
-    let mapped_sides = map_sides(&tiles);
+    let borders = parse();
+    let tiles_per_edge = int_sqrt(borders.len());
+    let mapped_sides = map_sides(&borders);
 
     let transforms: HashMap<usize, Transform> = HashMap::new();
     let picture: HashMap<Coord, usize> = HashMap::new();
 
     let mut puzzle = Puzzle {
         tiles_per_edge,
-        tiles,
+        borders,
         mapped_sides,
         transforms,
         picture,
@@ -72,7 +72,7 @@ fn main() {
 
 struct Puzzle {
     tiles_per_edge: usize,
-    tiles: HashMap<usize, Vec<Vec<bool>>>,
+    borders: HashMap<usize, Vec<Vec<bool>>>,
     mapped_sides: HashMap<Side, Option<LineUp>>,
     transforms: HashMap<usize, Transform>,
     picture: HashMap<Coord, usize>,
@@ -127,7 +127,7 @@ impl Puzzle {
 
     fn top_left_corner(&self) -> (usize, Transform) {
         let corner_key = self.find_a_corner();
-        let sides = self.tiles.get(&corner_key).unwrap();
+        let sides = self.borders.get(&corner_key).unwrap();
         let turns = self.top_left_turns(corner_key);
 
         (corner_key, (turns, false))
@@ -217,14 +217,14 @@ fn int_sqrt(square: usize) -> usize {
     }
 }
 
-fn map_sides(tiles: &HashMap<usize, Vec<Vec<bool>>>) -> HashMap<Side, Option<LineUp>> {
+fn map_sides(borders: &HashMap<usize, Vec<Vec<bool>>>) -> HashMap<Side, Option<LineUp>> {
     let mut result: HashMap<Side, Option<LineUp>> = HashMap::new();
-    for tile in tiles {
+    for tile in borders {
         let key = tile.0;
         let sides = tile.1;
 
         for (i, side) in sides.iter().enumerate() {
-            let line_up = find_match(tiles, *key, &sides[i]);
+            let line_up = find_match(borders, *key, &sides[i]);
             result.insert((*key, i), line_up);
         }
     }
@@ -233,14 +233,14 @@ fn map_sides(tiles: &HashMap<usize, Vec<Vec<bool>>>) -> HashMap<Side, Option<Lin
 }
 
 fn find_match(
-    tiles: &HashMap<usize, Vec<Vec<bool>>>,
+    borders: &HashMap<usize, Vec<Vec<bool>>>,
     key: usize,
     to_match: &Vec<bool>,
 ) -> Option<LineUp> {
     let mut rev = to_match.to_vec();
     rev.reverse();
 
-    for other_tile in tiles.iter().filter(|e| *e.0 != key) {
+    for other_tile in borders.iter().filter(|e| *e.0 != key) {
         for (i, other_side) in other_tile.1.iter().enumerate() {
             if to_match == other_side {
                 return Some(((*other_tile.0, i), false));
@@ -259,7 +259,7 @@ fn parse() -> HashMap<usize, Vec<Vec<bool>>> {
     let lines = lines_from_file("tin");
     let iter = lines.split(|e| e.is_empty());
 
-    let mut tiles: HashMap<usize, Vec<Vec<bool>>> = HashMap::new();
+    let mut borders: HashMap<usize, Vec<Vec<bool>>> = HashMap::new();
     for tile in iter {
         let mut lines = tile.iter();
         let nr = (lines.next().unwrap()[5..9]).parse::<usize>().unwrap();
@@ -286,8 +286,8 @@ fn parse() -> HashMap<usize, Vec<Vec<bool>>> {
         sides[EAST] = east;
         sides[SOUTH].reverse(); // Clockwise
         sides[WEST].reverse(); // Clockwise
-        tiles.insert(nr, sides);
+        borders.insert(nr, sides);
     }
 
-    tiles
+    borders
 }
