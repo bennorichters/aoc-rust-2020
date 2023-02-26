@@ -54,7 +54,24 @@ fn south_after_transform(transform: Transform) -> usize {
     }
 }
 
+fn translate(coord: Coord, transform: Transform) -> Coord {
+    let mut result = (coord.0, if transform.1 { 9 - coord.1 } else { coord.1 });
+    for i in 0..transform.0 {
+        result = rotate(result);
+    }
+
+    result
+}
+
+fn rotate(coord: Coord) -> Coord {
+    (9 - coord.1, coord.0)
+}
+
 fn main() {
+    solve();
+}
+
+fn solve() {
     let tiles = parse();
 
     let tiles_per_edge = int_sqrt(tiles.len());
@@ -62,28 +79,52 @@ fn main() {
     let mapped_sides = map_sides(&borders);
 
     let transforms: HashMap<usize, Transform> = HashMap::new();
-    let picture: HashMap<Coord, usize> = HashMap::new();
+    let arrangement: HashMap<Coord, usize> = HashMap::new();
 
     let mut jigsaw = Jigsaw {
+        tiles,
         tiles_per_edge,
         mapped_sides,
         transforms,
-        picture,
+        arrangement,
     };
 
     jigsaw.solve();
 }
 
 struct Jigsaw {
+    tiles: HashMap<usize, Vec<Vec<bool>>>,
     tiles_per_edge: usize,
     mapped_sides: HashMap<Side, Option<LineUp>>,
     transforms: HashMap<usize, Transform>,
-    picture: HashMap<Coord, usize>,
+    arrangement: HashMap<Coord, usize>,
 }
 
 impl Jigsaw {
     fn solve(&mut self) {
         self.fill_all_rows();
+
+        let mut result: HashMap<Coord, bool> = HashMap::new();
+        for (coord, tile_key) in &self.arrangement {
+            let tile = self.tiles.get(tile_key).unwrap();
+            let transform = self.transforms.get(tile_key).unwrap();
+            for (y, row) in tile.iter().enumerate().take(9).skip(1) {
+                for (x, cell) in row.iter().enumerate().take(9).skip(1) {
+                    let translated = translate((x, y), *transform);
+                    let pic_x = 8 * coord.0 + translated.0 - 1;
+                    let pic_y = 8 * coord.1 + translated.1 - 1;
+                    result.insert((pic_x, pic_y), *cell);
+                }
+            }
+        }
+        println!();
+        for y in 0..24 {
+            for x in 0..24 {
+                let c = result.get(&(x, y)).unwrap();
+                print!("{}", if *c { "#" } else { "." });
+            }
+            println!();
+        }
     }
 
     fn fill_all_rows(&mut self) {
@@ -92,7 +133,7 @@ impl Jigsaw {
             let left_most_key = left.0;
             let left_most_transform = left.1;
 
-            self.picture.insert((0, y), left_most_key);
+            self.arrangement.insert((0, y), left_most_key);
             self.transforms.insert(left_most_key, left_most_transform);
 
             self.fill_row(y, left_most_key, left_most_transform);
@@ -100,7 +141,7 @@ impl Jigsaw {
 
         for y in 0..self.tiles_per_edge {
             for x in 0..self.tiles_per_edge {
-                print!("{} ", self.picture.get(&(x, y)).unwrap());
+                print!("{} ", self.arrangement.get(&(x, y)).unwrap());
             }
             println!();
         }
@@ -115,7 +156,7 @@ impl Jigsaw {
             prev_key = nxt_tile.0;
             prev_transform = nxt_tile.1;
 
-            self.picture.insert((x, row), prev_key);
+            self.arrangement.insert((x, row), prev_key);
             self.transforms.insert(prev_key, prev_transform);
         }
     }
@@ -137,7 +178,7 @@ impl Jigsaw {
     }
 
     fn find_next_below(&self, row: usize) -> (usize, Transform) {
-        let above_key = self.picture.get(&(0, row - 1)).unwrap();
+        let above_key = self.arrangement.get(&(0, row - 1)).unwrap();
         let above_transform = self.transforms.get(above_key).unwrap();
 
         let above_south = south_after_transform(*above_transform);
