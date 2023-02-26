@@ -26,14 +26,20 @@ static EAST: usize = 3;
 static SOUTH: usize = 1;
 static WEST: usize = 2;
 
+static TURN_NORTH: &[usize] = &[0, 2, 1, 3];
+static TURN_WEST: &[usize] = &[3, 1, 0, 2];
+static EAST_AFTER_TURNING: &[usize] = &[EAST, NORTH, WEST, SOUTH];
+
 fn main() {
     let tiles = parse();
+    let tiles_per_edge = int_sqrt(tiles.len());
     let mapped_sides = map_sides(&tiles);
 
     let transforms: HashMap<usize, Transform> = HashMap::new();
     let picture: HashMap<Coord, usize> = HashMap::new();
 
     let mut puzzle = Puzzle {
+        tiles_per_edge,
         tiles,
         mapped_sides,
         transforms,
@@ -62,6 +68,7 @@ fn main() {
 //   update both maps and continue the row as described above
 
 struct Puzzle {
+    tiles_per_edge: usize,
     tiles: HashMap<usize, Vec<Vec<bool>>>,
     mapped_sides: HashMap<Side, Option<LineUp>>,
     transforms: HashMap<usize, Transform>,
@@ -74,16 +81,37 @@ impl Puzzle {
         println!("{}", corner);
 
         let sides = self.tiles.get(&corner).unwrap();
-        println!("{:?}", sides[NORTH]);
-        println!("{:?}", sides[EAST]);
-        println!("{:?}", sides[SOUTH]);
-        println!("{:?}", sides[WEST]);
-
-        let turns = self.necessary_turns(corner);
-        println!("{}", turns);
+        let turns = self.turns_top_left(corner);
 
         self.transforms.insert(corner, (turns, false));
         self.picture.insert((0, 0), corner);
+
+        self.fill_row(0, corner, (turns, false));
+    }
+
+    fn fill_row(&mut self, row: usize, left_most_key: usize, left_most_transform: Transform) {
+        let mut prev_key = left_most_key;
+        let mut prev_transform = left_most_transform;
+
+        for x in 1..self.tiles_per_edge {
+            let nxt_tile = self.find_next_tile(prev_key, prev_transform);
+            println!("{:?}", nxt_tile);
+            prev_key = nxt_tile.0;
+            prev_transform = nxt_tile.1;
+            self.picture.insert((x, row), prev_key);
+            self.transforms.insert(prev_key, prev_transform);
+        }
+    }
+
+    fn find_next_tile(&self, prev_key: usize, prev_transform: Transform) -> (usize, Transform) {
+        let prev_east_side = EAST_AFTER_TURNING[prev_transform.0];
+        let line_up = self.mapped_sides.get(&(prev_key, prev_east_side)).unwrap().unwrap();
+
+        let key = line_up.0.0;
+        let turns = TURN_WEST[line_up.0.1];
+        let flip = prev_transform.1 == line_up.1;
+
+        (key, (turns, flip))
     }
 
     fn find_a_corner(&self) -> usize {
@@ -94,10 +122,10 @@ impl Puzzle {
             }
         }
 
-        panic!("No corner found");
+        panic!("no corner found");
     }
 
-    fn necessary_turns(&self, corner: usize) -> usize {
+    fn turns_top_left(&self, corner: usize) -> usize {
         let north = self.mapped_sides.get(&(corner, NORTH)).unwrap().is_none();
         let east = self.mapped_sides.get(&(corner, EAST)).unwrap().is_none();
         let south = self.mapped_sides.get(&(corner, SOUTH)).unwrap().is_none();
@@ -119,7 +147,21 @@ impl Puzzle {
             return 3;
         }
 
-        panic!("Unexpected sides without line-ups");
+        panic!("corner tile with wrong line-ups");
+    }
+}
+
+fn int_sqrt(square: usize) -> usize {
+    let mut result = 0;
+    loop {
+        let test = result * result;
+        if test == square {
+            return result;
+        }
+        if test > square {
+            panic!("not a square");
+        }
+        result += 1;
     }
 }
 
