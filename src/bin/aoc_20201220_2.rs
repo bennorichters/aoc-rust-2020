@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 use std::{
     collections::{HashMap, HashSet},
     fs::File,
@@ -54,17 +51,24 @@ fn south_after_transform(transform: Transform) -> usize {
     }
 }
 
-fn translate(coord: Coord, transform: Transform) -> Coord {
-    let mut result = (coord.0, if transform.1 { 9 - coord.1 } else { coord.1 });
+fn translate(coord: Coord, transform: Transform, size: usize) -> Coord {
+    let mut result = (
+        coord.0,
+        if transform.1 {
+            size - 1 - coord.1
+        } else {
+            coord.1
+        },
+    );
     for _ in 0..transform.0 {
-        result = rotate(result);
+        result = rotate(result, size);
     }
 
     result
 }
 
-fn rotate(coord: Coord) -> Coord {
-    (9 - coord.1, coord.0)
+fn rotate(coord: Coord, size: usize) -> Coord {
+    (size - 1 - coord.1, coord.0)
 }
 
 fn main() {
@@ -94,11 +98,12 @@ fn solve() {
     let monster = monster_arr();
     let monster_length = monster[0].len();
 
-    let search_party = SearchParty {
+    let mut search_party = SearchParty {
         picture,
         size,
         monster,
         monster_length,
+        transform: (0, false),
     };
     search_party.search();
 }
@@ -129,23 +134,54 @@ struct SearchParty {
     size: usize,
     monster: Vec<Vec<bool>>,
     monster_length: usize,
+    transform: Transform,
 }
 
+static TRANSFORMS: &[Transform] = &[
+    (0, false),
+    (1, false),
+    (2, false),
+    (3, false),
+    (0, true),
+    (1, true),
+    (2, true),
+    (3, true),
+];
+
 impl SearchParty {
-    fn search(&self) {
+    fn search(&mut self) {
+        let monster_vol = 15;
+        let total_waves = self.picture.values().filter(|v| **v).count();
+        for tr in TRANSFORMS {
+            self.transform = *tr;
+            let monster_count = self.scan_sea();
+            println!("{:?}, {}, {}", tr, monster_count, total_waves - monster_count * monster_vol);
+        }
+    }
+
+    fn hit(&self, x: usize, y: usize) -> bool {
+        let translated = translate((x, y), self.transform, self.size);
+        let p = self.picture.get(&(translated.0, translated.1)).unwrap();
+        *p
+    }
+
+    fn scan_sea(&self) -> usize {
+        let mut result = 0;
         for y in 0..(self.size - 3) {
             for x in 0..(self.size - self.monster_length) {
                 if self.is_here(x, y) {
-                    println!("HERE!");
+                    result += 1;
                 }
             }
         }
+
+        result
     }
 
     fn is_here(&self, x: usize, y: usize) -> bool {
         for (ry, row) in self.monster.iter().enumerate() {
             for (rx, element) in row.iter().enumerate() {
-                let p = self.picture.get(&(rx + x, ry + y)).unwrap();
+                let p = self.hit(rx + x, ry + y);
                 if *element && !p {
                     return false;
                 }
@@ -174,7 +210,7 @@ impl Jigsaw {
             let transform = self.transforms.get(tile_key).unwrap();
             for (y, row) in tile.iter().enumerate().take(9).skip(1) {
                 for (x, cell) in row.iter().enumerate().take(9).skip(1) {
-                    let translated = translate((x, y), *transform);
+                    let translated = translate((x, y), *transform, 10);
                     let pic_x = 8 * coord.0 + translated.0 - 1;
                     let pic_y = 8 * coord.1 + translated.1 - 1;
                     result.insert((pic_x, pic_y), *cell);
@@ -382,7 +418,7 @@ fn borders(tiles: &HashMap<usize, Vec<Vec<bool>>>) -> HashMap<usize, Vec<Vec<boo
 }
 
 fn parse() -> HashMap<usize, Vec<Vec<bool>>> {
-    let lines = lines_from_file("tin");
+    let lines = lines_from_file("in");
     let iter = lines.split(|e| e.is_empty());
 
     let mut result: HashMap<usize, Vec<Vec<bool>>> = HashMap::new();
