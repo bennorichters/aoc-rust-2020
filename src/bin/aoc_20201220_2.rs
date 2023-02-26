@@ -284,11 +284,7 @@ fn parse() -> HashMap<usize, Vec<Vec<bool>>> {
 
         let mut rows: Vec<Vec<bool>> = Vec::new();
         for line in lines {
-            let mut row: Vec<bool> = Vec::new();
-            for c in line.chars() {
-                row.push(c == '#');
-            }
-            rows.push(row);
+            rows.push(line.chars().map(|c| c == '#').collect());
         }
 
         result.insert(key, rows);
