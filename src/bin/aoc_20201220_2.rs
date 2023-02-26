@@ -70,24 +70,6 @@ fn main() {
     puzzle.solve();
 }
 
-// Find one of the four tiles that are on a corner
-//   by identifying that it has two sides that do not match any other side of any other tile
-// Find out how many times that corner tile needs to be turned clocwise to be the top left corner
-// Keep a map of tiles and how they were transformed <key, (turns: [0,1,2,3], flipped: [Y/N])>
-// Add first corner tile to transform_map
-// Keep map of coordinates and tiles <(x,y), key>
-// Insert coord (0,0) mapped to first corner tile
-// Fill the row by
-//   looking at what is now the east side of the right most tile of that row
-//   find the tile that lines up with that side
-//   flip if the reverse status of the left tile is the same as the found one (they shouldn't)
-//   rotate the tile so that the matching side is on the west side
-//   update the transformation map and the coordinates map
-// Start to fill the new row by
-//   find the tile that lines up with the south side of the leftmost tile in the row above
-//   flip if necesssary (see above) and rotate so that the matching side is on the north side
-//   update both maps and continue the row as described above
-
 struct Puzzle {
     tiles_per_edge: usize,
     tiles: HashMap<usize, Vec<Vec<bool>>>,
@@ -99,17 +81,6 @@ struct Puzzle {
 impl Puzzle {
     fn solve(&mut self) {
         self.fill_all_rows();
-        // let test = 1427;
-
-        // println!("{:?}", self.mapped_sides.get(&(test, NORTH)).unwrap());
-        // println!("{:?}", self.mapped_sides.get(&(test, EAST)).unwrap());
-        // println!("{:?}", self.mapped_sides.get(&(test, SOUTH)).unwrap());
-        // println!("{:?}", self.mapped_sides.get(&(test, WEST)).unwrap());
-
-        // println!("-----------------");
-
-        // let east = self.find_next_east(test, (1, false));
-        // println!("{:?}", east);
     }
 
     fn fill_all_rows(&mut self) {
