@@ -1,5 +1,5 @@
-// #![allow(dead_code)]
-// #![allow(unused_variables)]
+#![allow(dead_code)]
+#![allow(unused_variables)]
 
 use std::{
     collections::{HashMap, HashSet},
@@ -26,8 +26,11 @@ static EAST: usize = 1;
 static SOUTH: usize = 2;
 static WEST: usize = 3;
 
-static TURN_NORTH: &[usize] = &[NORTH, WEST, SOUTH, EAST];
-static TURN_WEST: &[usize] = &[WEST, SOUTH, EAST, NORTH];
+static TURN_NORTH_NO_FLIP: &[usize] = &[0, 3, 2, 1];
+static TURN_NORTH_FLIP: &[usize] = &[2, 3, 0, 1];
+
+static TURN_WEST_NO_FLIP: &[usize] = &[3, 2, 1, 0];
+static TURN_WEST_FLIP: &[usize] = &[1, 2, 3, 0];
 
 static EAST_AFTER_TURNING_NO_REVERSE: &[usize] = &[EAST, NORTH, WEST, SOUTH];
 static EAST_AFTER_TURNING_REVERSE: &[usize] = &[EAST, SOUTH, WEST, NORTH];
@@ -61,24 +64,24 @@ fn main() {
     let transforms: HashMap<usize, Transform> = HashMap::new();
     let picture: HashMap<Coord, usize> = HashMap::new();
 
-    let mut puzzle = Puzzle {
+    let mut jigsaw = Jigsaw {
         tiles_per_edge,
         mapped_sides,
         transforms,
         picture,
     };
 
-    puzzle.solve();
+    jigsaw.solve();
 }
 
-struct Puzzle {
+struct Jigsaw {
     tiles_per_edge: usize,
     mapped_sides: HashMap<Side, Option<LineUp>>,
     transforms: HashMap<usize, Transform>,
     picture: HashMap<Coord, usize>,
 }
 
-impl Puzzle {
+impl Jigsaw {
     fn solve(&mut self) {
         self.fill_all_rows();
     }
@@ -127,6 +130,7 @@ impl Puzzle {
 
     fn top_left_corner(&self) -> (usize, Transform) {
         let corner_key = self.find_a_corner();
+        // let corner_key = 3187;
         let turns = self.top_left_turns(corner_key);
 
         (corner_key, (turns, false))
@@ -144,8 +148,14 @@ impl Puzzle {
             .unwrap();
 
         let key = line_up.0 .0;
-        let turns = TURN_NORTH[line_up.0 .1];
         let flip = above_transform.1 == line_up.1;
+
+        let side = line_up.0 .1;
+        let turns = if flip {
+            TURN_NORTH_FLIP[side]
+        } else {
+            TURN_NORTH_NO_FLIP[side]
+        };
 
         (key, (turns, flip))
     }
@@ -159,8 +169,14 @@ impl Puzzle {
             .unwrap();
 
         let key = line_up.0 .0;
-        let turns = TURN_WEST[line_up.0 .1];
         let flip = prev_transform.1 == line_up.1;
+
+        let side = line_up.0 .1;
+        let turns = if flip {
+            TURN_WEST_FLIP[side]
+        } else {
+            TURN_WEST_NO_FLIP[side]
+        };
 
         (key, (turns, flip))
     }
