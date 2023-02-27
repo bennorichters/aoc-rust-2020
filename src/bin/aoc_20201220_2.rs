@@ -35,31 +35,24 @@ static EAST_AFTER_TURNING_REVERSE: &[usize] = &[EAST, SOUTH, WEST, NORTH];
 static SOUTH_AFTER_TURNING_NO_REVERSE: &[usize] = &[SOUTH, EAST, NORTH, WEST];
 static SOUTH_AFTER_TURNING_REVERSE: &[usize] = &[NORTH, EAST, SOUTH, WEST];
 
-fn east_after_transform(transform: Transform) -> usize {
-    if transform.1 {
-        EAST_AFTER_TURNING_REVERSE[transform.0]
+fn east_after_transform((turns, flipped): Transform) -> usize {
+    if flipped {
+        EAST_AFTER_TURNING_REVERSE[turns]
     } else {
-        EAST_AFTER_TURNING_NO_REVERSE[transform.0]
+        EAST_AFTER_TURNING_NO_REVERSE[turns]
     }
 }
 
-fn south_after_transform(transform: Transform) -> usize {
-    if transform.1 {
-        SOUTH_AFTER_TURNING_REVERSE[transform.0]
+fn south_after_transform((turns, flipped): Transform) -> usize {
+    if flipped {
+        SOUTH_AFTER_TURNING_REVERSE[turns]
     } else {
-        SOUTH_AFTER_TURNING_NO_REVERSE[transform.0]
+        SOUTH_AFTER_TURNING_NO_REVERSE[turns]
     }
 }
 
-fn translate(coord: Coord, transform: Transform, size: usize) -> Coord {
-    let mut result = (
-        coord.0,
-        if transform.1 {
-            size - 1 - coord.1
-        } else {
-            coord.1
-        },
-    );
+fn translate((x, y): Coord, transform: Transform, size: usize) -> Coord {
+    let mut result = (x, if transform.1 { size - 1 - y } else { y });
     for _ in 0..transform.0 {
         result = rotate(result, size);
     }
@@ -67,8 +60,8 @@ fn translate(coord: Coord, transform: Transform, size: usize) -> Coord {
     result
 }
 
-fn rotate(coord: Coord, size: usize) -> Coord {
-    (size - 1 - coord.1, coord.0)
+fn rotate((x, y): Coord, size: usize) -> Coord {
+    (size - 1 - y, x)
 }
 
 fn main() {
@@ -155,14 +148,18 @@ impl SearchParty {
         for tr in TRANSFORMS {
             self.transform = *tr;
             let monster_count = self.scan_sea();
-            println!("{:?}, {}, {}", tr, monster_count, total_waves - monster_count * monster_vol);
+            println!(
+                "{:?}, {}, {}",
+                tr,
+                monster_count,
+                total_waves - monster_count * monster_vol
+            );
         }
     }
 
     fn hit(&self, x: usize, y: usize) -> bool {
-        let translated = translate((x, y), self.transform, self.size);
-        let p = self.picture.get(&(translated.0, translated.1)).unwrap();
-        *p
+        let (tx, ty) = translate((x, y), self.transform, self.size);
+        *self.picture.get(&(tx, ty)).unwrap()
     }
 
     fn scan_sea(&self) -> usize {
@@ -204,14 +201,14 @@ impl Jigsaw {
         self.fill_all_rows();
 
         let mut result: HashMap<Coord, bool> = HashMap::new();
-        for (coord, tile_key) in &self.arrangement {
+        for ((ax, ay), tile_key) in &self.arrangement {
             let tile = self.tiles.get(tile_key).unwrap();
             let transform = self.transforms.get(tile_key).unwrap();
             for (y, row) in tile.iter().enumerate().take(9).skip(1) {
                 for (x, cell) in row.iter().enumerate().take(9).skip(1) {
-                    let translated = translate((x, y), *transform, 10);
-                    let pic_x = 8 * coord.0 + translated.0 - 1;
-                    let pic_y = 8 * coord.1 + translated.1 - 1;
+                    let (tx, ty) = translate((x, y), *transform, 10);
+                    let pic_x = 8 * ax + tx - 1;
+                    let pic_y = 8 * ay + ty - 1;
                     result.insert((pic_x, pic_y), *cell);
                 }
             }
@@ -222,9 +219,7 @@ impl Jigsaw {
 
     fn fill_all_rows(&mut self) {
         for y in 0..self.tiles_per_edge {
-            let left = self.find_leftmost(y);
-            let left_most_key = left.0;
-            let left_most_transform = left.1;
+            let (left_most_key, left_most_transform) = self.find_leftmost(y);
 
             self.arrangement.insert((0, y), left_most_key);
             self.transforms.insert(left_most_key, left_most_transform);
@@ -238,9 +233,9 @@ impl Jigsaw {
         let mut prev_transform = left_most_transform;
 
         for x in 1..self.tiles_per_edge {
-            let nxt_tile = self.find_next_east(prev_key, prev_transform);
-            prev_key = nxt_tile.0;
-            prev_transform = nxt_tile.1;
+            let (nxt_key, nxt_transform) = self.find_next_east(prev_key, prev_transform);
+            prev_key = nxt_key;
+            prev_transform = nxt_transform;
 
             self.arrangement.insert((x, row), prev_key);
             self.transforms.insert(prev_key, prev_transform);
@@ -257,7 +252,6 @@ impl Jigsaw {
 
     fn top_left_corner(&self) -> (usize, Transform) {
         let corner_key = self.find_a_corner();
-        // let corner_key = 3187;
         let turns = self.top_left_turns(corner_key);
 
         (corner_key, (turns, false))
@@ -265,47 +259,47 @@ impl Jigsaw {
 
     fn find_next_below(&self, row: usize) -> (usize, Transform) {
         let above_key = self.arrangement.get(&(0, row - 1)).unwrap();
-        let above_transform = self.transforms.get(above_key).unwrap();
+        let (above_turns, above_flipped) = *self.transforms.get(above_key).unwrap();
 
-        let above_south = south_after_transform(*above_transform);
-        let line_up = self
+        let above_south = south_after_transform((above_turns, above_flipped));
+        let ((match_key, match_side), match_flipped) = self
             .mapped_sides
             .get(&(*above_key, above_south))
             .unwrap()
             .unwrap();
 
-        let key = line_up.0 .0;
-        let flip = above_transform.1 == line_up.1;
+        let flip = above_flipped == match_flipped;
 
-        let side = line_up.0 .1;
+        let side = match_side;
         let turns = if flip {
             TURN_NORTH_FLIP[side]
         } else {
             TURN_NORTH_NO_FLIP[side]
         };
 
-        (key, (turns, flip))
+        (match_key, (turns, flip))
     }
 
-    fn find_next_east(&self, prev_key: usize, prev_transform: Transform) -> (usize, Transform) {
-        let prev_east = east_after_transform(prev_transform);
-        let line_up = self
+    fn find_next_east(
+        &self,
+        prev_key: usize,
+        (prev_turns, prev_flipped): Transform,
+    ) -> (usize, Transform) {
+        let prev_east = east_after_transform((prev_turns, prev_flipped));
+        let ((match_key, match_side), match_flipped) = self
             .mapped_sides
             .get(&(prev_key, prev_east))
             .unwrap()
             .unwrap();
 
-        let key = line_up.0 .0;
-        let flip = prev_transform.1 == line_up.1;
-
-        let side = line_up.0 .1;
+        let flip = prev_flipped == match_flipped;
         let turns = if flip {
-            TURN_WEST_FLIP[side]
+            TURN_WEST_FLIP[match_side]
         } else {
-            TURN_WEST_NO_FLIP[side]
+            TURN_WEST_NO_FLIP[match_side]
         };
 
-        (key, (turns, flip))
+        (match_key, (turns, flip))
     }
 
     fn find_a_corner(&self) -> usize {
@@ -361,10 +355,7 @@ fn int_sqrt(square: usize) -> usize {
 
 fn map_sides(borders: &HashMap<usize, Vec<Vec<bool>>>) -> HashMap<Side, Option<LineUp>> {
     let mut result: HashMap<Side, Option<LineUp>> = HashMap::new();
-    for tile in borders {
-        let key = tile.0;
-        let sides = tile.1;
-
+    for (key, sides) in borders {
         for (i, side) in sides.iter().enumerate() {
             let line_up = find_match(borders, *key, side);
             result.insert((*key, i), line_up);
@@ -382,14 +373,14 @@ fn find_match(
     let mut rev = to_match.to_vec();
     rev.reverse();
 
-    for other_tile in borders.iter().filter(|e| *e.0 != key) {
-        for (i, other_side) in other_tile.1.iter().enumerate() {
+    for (other_key, other_sides) in borders.iter().filter(|e| *e.0 != key) {
+        for (i, other_side) in other_sides.iter().enumerate() {
             if to_match == other_side {
-                return Some(((*other_tile.0, i), false));
+                return Some(((*other_key, i), false));
             }
 
             if &rev == other_side {
-                return Some(((*other_tile.0, i), true));
+                return Some(((*other_key, i), true));
             }
         }
     }
