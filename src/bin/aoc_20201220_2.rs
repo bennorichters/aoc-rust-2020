@@ -23,31 +23,31 @@ static EAST: usize = 1;
 static SOUTH: usize = 2;
 static WEST: usize = 3;
 
-static TURN_NORTH_NO_FLIP: &[usize] = &[0, 3, 2, 1];
-static TURN_NORTH_FLIP: &[usize] = &[2, 3, 0, 1];
+static TURN_NORTH_NOT_FLIPPED: &[usize] = &[0, 3, 2, 1];
+static TURN_NORTH_FLIPPED: &[usize] = &[2, 3, 0, 1];
 
-static TURN_WEST_NO_FLIP: &[usize] = &[3, 2, 1, 0];
-static TURN_WEST_FLIP: &[usize] = &[1, 2, 3, 0];
+static TURN_WEST_NOT_FLIPPED: &[usize] = &[3, 2, 1, 0];
+static TURN_WEST_FLIPPED: &[usize] = &[1, 2, 3, 0];
 
-static EAST_AFTER_TURNING_NO_FLIP: &[usize] = &[EAST, NORTH, WEST, SOUTH];
-static EAST_AFTER_TURNING_FLIP: &[usize] = &[EAST, SOUTH, WEST, NORTH];
+static EAST_AFTER_TURNING_NOT_FLIPPED: &[usize] = &[EAST, NORTH, WEST, SOUTH];
+static EAST_AFTER_TURNING_FLIPPED: &[usize] = &[EAST, SOUTH, WEST, NORTH];
 
-static SOUTH_AFTER_TURNING_NO_FLIP: &[usize] = &[SOUTH, EAST, NORTH, WEST];
-static SOUTH_AFTER_TURNING_FLIP: &[usize] = &[NORTH, EAST, SOUTH, WEST];
+static SOUTH_AFTER_TURNING_NOT_FLIPPED: &[usize] = &[SOUTH, EAST, NORTH, WEST];
+static SOUTH_AFTER_TURNING_FLIPPED: &[usize] = &[NORTH, EAST, SOUTH, WEST];
 
 fn east_after_transform((turns, flipped): Transform) -> usize {
     if flipped {
-        EAST_AFTER_TURNING_FLIP[turns]
+        EAST_AFTER_TURNING_FLIPPED[turns]
     } else {
-        EAST_AFTER_TURNING_NO_FLIP[turns]
+        EAST_AFTER_TURNING_NOT_FLIPPED[turns]
     }
 }
 
 fn south_after_transform((turns, flipped): Transform) -> usize {
     if flipped {
-        SOUTH_AFTER_TURNING_FLIP[turns]
+        SOUTH_AFTER_TURNING_FLIPPED[turns]
     } else {
-        SOUTH_AFTER_TURNING_NO_FLIP[turns]
+        SOUTH_AFTER_TURNING_NOT_FLIPPED[turns]
     }
 }
 
@@ -272,9 +272,9 @@ impl Jigsaw {
 
         let side = match_side;
         let turns = if flip {
-            TURN_NORTH_FLIP[side]
+            TURN_NORTH_FLIPPED[side]
         } else {
-            TURN_NORTH_NO_FLIP[side]
+            TURN_NORTH_NOT_FLIPPED[side]
         };
 
         (match_key, (turns, flip))
@@ -294,9 +294,9 @@ impl Jigsaw {
 
         let flip = prev_flipped == match_flipped;
         let turns = if flip {
-            TURN_WEST_FLIP[match_side]
+            TURN_WEST_FLIPPED[match_side]
         } else {
-            TURN_WEST_NO_FLIP[match_side]
+            TURN_WEST_NOT_FLIPPED[match_side]
         };
 
         (match_key, (turns, flip))
