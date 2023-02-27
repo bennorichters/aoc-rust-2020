@@ -29,25 +29,25 @@ static TURN_NORTH_FLIP: &[usize] = &[2, 3, 0, 1];
 static TURN_WEST_NO_FLIP: &[usize] = &[3, 2, 1, 0];
 static TURN_WEST_FLIP: &[usize] = &[1, 2, 3, 0];
 
-static EAST_AFTER_TURNING_NO_REVERSE: &[usize] = &[EAST, NORTH, WEST, SOUTH];
-static EAST_AFTER_TURNING_REVERSE: &[usize] = &[EAST, SOUTH, WEST, NORTH];
+static EAST_AFTER_TURNING_NO_FLIP: &[usize] = &[EAST, NORTH, WEST, SOUTH];
+static EAST_AFTER_TURNING_FLIP: &[usize] = &[EAST, SOUTH, WEST, NORTH];
 
-static SOUTH_AFTER_TURNING_NO_REVERSE: &[usize] = &[SOUTH, EAST, NORTH, WEST];
-static SOUTH_AFTER_TURNING_REVERSE: &[usize] = &[NORTH, EAST, SOUTH, WEST];
+static SOUTH_AFTER_TURNING_NO_FLIP: &[usize] = &[SOUTH, EAST, NORTH, WEST];
+static SOUTH_AFTER_TURNING_FLIP: &[usize] = &[NORTH, EAST, SOUTH, WEST];
 
 fn east_after_transform((turns, flipped): Transform) -> usize {
     if flipped {
-        EAST_AFTER_TURNING_REVERSE[turns]
+        EAST_AFTER_TURNING_FLIP[turns]
     } else {
-        EAST_AFTER_TURNING_NO_REVERSE[turns]
+        EAST_AFTER_TURNING_NO_FLIP[turns]
     }
 }
 
 fn south_after_transform((turns, flipped): Transform) -> usize {
     if flipped {
-        SOUTH_AFTER_TURNING_REVERSE[turns]
+        SOUTH_AFTER_TURNING_FLIP[turns]
     } else {
-        SOUTH_AFTER_TURNING_NO_REVERSE[turns]
+        SOUTH_AFTER_TURNING_NO_FLIP[turns]
     }
 }
 
