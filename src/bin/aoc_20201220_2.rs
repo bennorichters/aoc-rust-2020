@@ -181,8 +181,7 @@ impl SearchParty {
     fn is_here(&self, x: usize, y: usize) -> bool {
         for (ry, row) in self.monster.iter().enumerate() {
             for (rx, element) in row.iter().enumerate() {
-                let p = self.hit(rx + x, ry + y);
-                if *element && !p {
+                if *element && !self.hit(rx + x, ry + y) {
                     return false;
                 }
             }
