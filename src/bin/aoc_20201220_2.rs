@@ -88,8 +88,8 @@ fn solve() {
     let picture = jigsaw.create_picture();
 
     let size = tiles_per_edge * 8;
-    let monster = monster_arr();
-    let monster_length = monster[0].len();
+    let monster = relative_monster_coords();
+    let monster_length = MONSTER[0].len();
 
     let mut search_party = SearchParty {
         picture,
@@ -101,31 +101,30 @@ fn solve() {
     search_party.search();
 }
 
-const MONSTER_LINE_0: &str = "                  # ";
-const MONSTER_LINE_1: &str = "#    ##    ##    ###";
-const MONSTER_LINE_2: &str = " #  #  #  #  #  #   ";
+static MONSTER: &[&str] = &[
+    "                  # ",
+    "#    ##    ##    ###",
+    " #  #  #  #  #  #   ",
+];
 
-fn monster_arr() -> Vec<Vec<bool>> {
-    let m0 = MONSTER_LINE_0
-        .chars()
-        .map(|c| c == '#')
-        .collect::<Vec<bool>>();
-    let m1 = MONSTER_LINE_1
-        .chars()
-        .map(|c| c == '#')
-        .collect::<Vec<bool>>();
-    let m2 = MONSTER_LINE_2
-        .chars()
-        .map(|c| c == '#')
-        .collect::<Vec<bool>>();
-
-    vec![m0, m1, m2]
+fn relative_monster_coords() -> HashSet<Coord> {
+    MONSTER
+        .iter()
+        .enumerate()
+        .flat_map(|(y, s)| {
+            s.chars()
+                .enumerate()
+                .filter(|(_, c)| *c == '#')
+                .map(|(x, _)| (x, y))
+                .collect::<HashSet<Coord>>()
+        })
+        .collect()
 }
 
 struct SearchParty {
     picture: HashMap<Coord, bool>,
     size: usize,
-    monster: Vec<Vec<bool>>,
+    monster: HashSet<Coord>,
     monster_length: usize,
     transform: Transform,
 }
@@ -166,25 +165,13 @@ impl SearchParty {
         let mut result = 0;
         for y in 0..(self.size - 3) {
             for x in 0..(self.size - self.monster_length) {
-                if self.is_here(x, y) {
+                if self.monster.iter().all(|(mx, my)| self.hit(mx + x, my + y)) {
                     result += 1;
                 }
             }
         }
 
         result
-    }
-
-    fn is_here(&self, x: usize, y: usize) -> bool {
-        for (ry, row) in self.monster.iter().enumerate() {
-            for (rx, element) in row.iter().enumerate() {
-                if *element && !self.hit(rx + x, ry + y) {
-                    return false;
-                }
-            }
-        }
-
-        true
     }
 }
 
